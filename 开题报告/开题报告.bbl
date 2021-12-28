@@ -1,0 +1,10 @@
+\begin{thebibliography}{1}
+
+\bibitem{raissi2019physics}
+M.~Raissi, P.~Perdikaris, and G.~E. Karniadakis.
+\newblock Physics-informed neural networks: A deep learning framework for
+  solving forward and inverse problems involving nonlinear partial differential
+  equations.
+\newblock {\em Journal of Computational Physics}, 378:686--707, 2019.
+
+\end{thebibliography}
