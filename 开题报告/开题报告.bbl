@@ -1,5 +1,17 @@
 \begin{thebibliography}{1}
 
+\bibitem{lagaris1998artificial}
+I.~E. Lagaris, A.~Likas, and D.~I. Fotiadis.
+\newblock Artificial neural networks for solving ordinary and partial
+  differential equations.
+\newblock {\em IEEE transactions on neural networks}, 9(5):987--1000, 1998.
+
+\bibitem{lagaris2000neural}
+I.~E. Lagaris, A.~C. Likas, and D.~G. Papageorgiou.
+\newblock Neural-network methods for boundary value problems with irregular
+  boundaries.
+\newblock {\em IEEE Transactions on Neural Networks}, 11(5):1041--1049, 2000.
+
 \bibitem{raissi2019physics}
 M.~Raissi, P.~Perdikaris, and G.~E. Karniadakis.
 \newblock Physics-informed neural networks: A deep learning framework for
