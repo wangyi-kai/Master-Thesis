@@ -1,5 +1,8 @@
 \documentclass{article}
 \usepackage[UTF8]{ctex}
+
+\usepackage{listings}
+%\lstset{langugae=Python}
 \usepackage{geometry}
 \usepackage{graphicx}
 \usepackage{subfigure}
@@ -23,6 +26,99 @@
 \section{研究内容}
 在二十多年前就有科学家提出用神经网络求解常微分方程和偏微分方程\cite{lagaris1998artificial},\cite{lagaris2000neural}，但受限于当时的计算方法和计算资源，这一方法的效果并不是很好也并为得到足够的重视。近几年随着算力的增长，神经网络凸显出其对于非线性函数强大的逼近能力。布朗大学应用数学系的教授Karniadakis教授在神经网络的基础上，进一步将其于物理规律相结合提出了一套新的深度学习算法框架，叫做“Physics Informed Neural Network（PINN）"， 并首先将其用于求解偏微分方程的正问题与反问题，取得了很好的结果。PINN提出后，大量基于这一框架的研究被展开，并逐渐产生了一门新的交叉领域———科学机器学习。
 \subsection{非线性偏微分方程}
+从数学函数逼近论的角度看，神经网络可以看作一个具有强大逼近能力的非线性函数，而偏微分方程的求解过程就是去寻找一个满足约束条件的非线性函数，因此可以考虑用神经网络去逼近偏微分方程的解。利用训练神经网络时广泛使用的自动微分\cite{baydin2018automatic}技术，可以将神经网络对它的模型参数和输入变量求微分从而将偏微分方程中的微分约束条件嵌入到神经网络的损失函数设计中，这样便获得了带有物理模型约束的神经网络，即基于物理信息的神经网络（PINN）。考虑一种一般形式的非线性偏微分方程
+\begin{equation}
+u_t + \mathcal{N}[u;\lambda] = 0 \ x\in \Omega,t\in [0,T]
+\end{equation}
+$u(t,x)$ 表示该方程的解，$\mathcal{N}[u;\lambda]$ 是一个带有参数$\lambda$ 的非线性算子，$x$是空间变量，$t$是时间变量，$\Omega$是 空间范围，$T$ 是时间范围。传统的偏微分方程解法是给定$u(t,x)$的初始状态、边界状态和参数$\lambda$的值，通过求解给定的方程来获得任意时刻和位置的$u(t,x)$的函数值，如果无法求得方程的解析解，可以利用有限差分、有限元法等数值方法获得$u(t,x)$在指定$(x,t)$处的数值解。
+\subsection{Burgers'方程}
+以Burgers'方程为例，Burgers'方程在许多领域都有应用，包括流体力学、空气动力学和交通流量等方面。带有Dirichlet边界条件的Burgers'方程有如下形式
+\begin{equation}
+\begin{array}{l}
+u_t+uu_x-(0.01)/\pi)u_{xx}=0 \ x\in[-1,1], t\in[0,1] \\
+u(0,x) = -sin(\pi x), \\
+u(t,-1) = u(t,1) = 0.
+\end{array}
+\end{equation}
+定义方程的左边为$f(t,x)$:
+\[ f(t,x) := u_t+uu_x-(0.01)/\pi)u_{xx} \]
+PINN通过建立一个神经网络来逼近方程的解$u(t,x)$, 为了更清晰的阐明该方法是如何实现的我们展示了部分Python代码，该方法使用当前最为流行的开源深度学习框架Pytorch实现。首先定义一个逼近$u(t,x)$的神经网络:
+\begin{lstlisting}[language=Python,frame=shadowbox]
+ def net_u(self, x, t):
+        u = self.dnn(torch.cat([x, t], dim=1))
+        return u
+\end{lstlisting}
+接着使用Pytorch的自动微分功能对该网络的输入变量$(x,t)$求微分从而将方程的微分约束形式使用神经网络表示出来。
+\begin{lstlisting}[language=Python,frame = shadowbox]
+    def net_f(self, x, t):
+        """ The pytorch autograd version of calculating residual """
+        u = self.net_u(x, t)
+
+        u_t = torch.autograd.grad(
+            u, t,
+            grad_outputs=torch.ones_like(u),
+            retain_graph=True,
+            create_graph=True
+        )[0]
+        u_x = torch.autograd.grad(
+            u, x,
+            grad_outputs=torch.ones_like(u),
+            retain_graph=True,
+            create_graph=True
+        )[0]
+        u_xx = torch.autograd.grad(
+            u_x, x,
+            grad_outputs=torch.ones_like(u_x),
+            retain_graph=True,
+            create_graph=True
+        )[0]
+
+        f = u_t + u * u_x - self.nu * u_xx
+        return f
+
+\end{lstlisting}
+PINN的损失函数定义如下：
+\begin{equation}
+LOSS = LOSS_{u} + LOSS_{f}
+\end{equation}
+其中$LOSS_u$表示为
+\begin{equation}
+\label{u}
+LOSS_{u}=\frac{1}{N_u}\sum_{i=1}^{N_u}|u(t_{u}^{i},x_{u}^{i})-u^{i}|^{2}
+\end{equation}
+$LOSS_f$表示为
+\begin{equation}
+\label{f}
+LOSS_{f} = \frac{1}{N_f}\sum_{i=1}^{N_f}|f(t_{f}^{i},x_{f}^{i})|^{2}
+\end{equation}
+(\ref{u})表示损失函数中数据驱动的部分，$\lbrace t_{u}^{i},x_{u}^{i},u^{i} \rbrace_{i=1}^{N_u}$ 表示通过初始状态和边界状态获取的训练数据，也包括通过实验采样、数值模拟等手段获取的训练数据。(\ref{f})表示损失函数中物理模型约束部分， $\lbrace t_{f}^{i},x_{f}^{i} \rbrace_{i=1}^{N_f}$ 表示对于$f(x,t)$ 的训练配点，通过在时间和空间范围内采样$(x,t)$，再利用自动微分技术便可高效计算出$LOSS_{f}$。我们期望训练出的神经网络不但与训练数据的误差要尽可能小，而且要尽可能满足方程的约束条件，即$LOSS_u$ 和 $LOSS_f$ 要尽可能接近$0$。
+\subsection{实验结果}
+我们分别用传统方法和神经网络做了实验来进行对比。
+\subsubsection{有限元方法}
+传统方法使用有限元法来及求解偏微分方程的数值解，我们使用Fenics来实现，Fenics是一个开源的求解偏微分方程的计算平台，可以快速有效的将物理模型转化为有限元代码。在空间上我们划分了255个区域，时间上划分了100个区域。图1展示了使用有限元求解的结果。
+\begin{figure}
+\centering
+\caption{使用Fenics求解}
+\includegraphics[scale=1]{Burgers Equation(Fenics).pdf}
+\end{figure}
+
+
+\section{神经网络}
+\begin{figure}
+\centering
+\caption{训练数据分布}
+\includegraphics[scale=0.6]{result1.pdf}
+\end{figure}
+
+\begin{figure}
+\centering
+\caption{结果对比}
+\includegraphics[scale=0.4]{compare.png}
+\end{figure}
+
+
+
+
 
 \section{研究方法}
 

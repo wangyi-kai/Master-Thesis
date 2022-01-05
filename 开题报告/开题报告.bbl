@@ -1,5 +1,10 @@
 \begin{thebibliography}{1}
 
+\bibitem{baydin2018automatic}
+A.~G. Baydin, B.~A. Pearlmutter, A.~A. Radul, and J.~M. Siskind.
+\newblock Automatic differentiation in machine learning: a survey.
+\newblock {\em Journal of machine learning research}, 18, 2018.
+
 \bibitem{lagaris1998artificial}
 I.~E. Lagaris, A.~Likas, and D.~I. Fotiadis.
 \newblock Artificial neural networks for solving ordinary and partial
