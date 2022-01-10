@@ -32,7 +32,7 @@ u_t + \mathcal{N}[u;\lambda] = 0 \ x\in \Omega,t\in [0,T]
 \end{equation}
 $u(t,x)$ 表示该方程的解，$\mathcal{N}[u;\lambda]$ 是一个带有参数$\lambda$ 的非线性算子，$x$是空间变量，$t$是时间变量，$\Omega$是 空间范围，$T$ 是时间范围。传统的偏微分方程解法是给定$u(t,x)$的初始状态、边界状态和参数$\lambda$的值，通过求解给定的方程来获得任意时刻和位置的$u(t,x)$的函数值，如果无法求得方程的解析解，可以利用有限差分、有限元法等数值方法获得$u(t,x)$在指定$(x,t)$处的数值解。
 \subsection{Burgers'方程}
-以Burgers'方程为例，Burgers'方程在许多领域都有应用，包括流体力学、空气动力学和交通流量等方面。带有Dirichlet边界条件的Burgers'方程有如下形式
+我们以Burgers'方程为例，Burgers方程是一个模拟冲击波的传播和反射的非线性偏微分方程，它在许多领域都有应用，包括流体力学、空气动力学和非线性声学等方面。本文使用的方程定义如下：
 \begin{equation}
 \begin{array}{l}
 u_t+uu_x-(0.01)/\pi)u_{xx}=0 \ x\in[-1,1], t\in[0,1] \\
@@ -42,41 +42,7 @@ u(t,-1) = u(t,1) = 0.
 \end{equation}
 定义方程的左边为$f(t,x)$:
 \[ f(t,x) := u_t+uu_x-(0.01)/\pi)u_{xx} \]
-PINN通过建立一个神经网络来逼近方程的解$u(t,x)$, 为了更清晰的阐明该方法是如何实现的我们展示了部分Python代码，该方法使用当前最为流行的开源深度学习框架Pytorch实现。首先定义一个逼近$u(t,x)$的神经网络:
-\begin{lstlisting}[language=Python,frame=shadowbox]
- def net_u(self, x, t):
-        u = self.dnn(torch.cat([x, t], dim=1))
-        return u
-\end{lstlisting}
-接着使用Pytorch的自动微分功能对该网络的输入变量$(x,t)$求微分从而将方程的微分约束形式使用神经网络表示出来。
-\begin{lstlisting}[language=Python,frame = shadowbox]
-    def net_f(self, x, t):
-        """ The pytorch autograd version of calculating residual """
-        u = self.net_u(x, t)
-
-        u_t = torch.autograd.grad(
-            u, t,
-            grad_outputs=torch.ones_like(u),
-            retain_graph=True,
-            create_graph=True
-        )[0]
-        u_x = torch.autograd.grad(
-            u, x,
-            grad_outputs=torch.ones_like(u),
-            retain_graph=True,
-            create_graph=True
-        )[0]
-        u_xx = torch.autograd.grad(
-            u_x, x,
-            grad_outputs=torch.ones_like(u_x),
-            retain_graph=True,
-            create_graph=True
-        )[0]
-
-        f = u_t + u * u_x - self.nu * u_xx
-        return f
-
-\end{lstlisting}
+PINN通过建立一个神经网络来逼近方程的解$u(t,x)$,我们使用当前最为流行的开源深度学习框架Pytorch实现。首先定义一个逼近$u(t,x)$的神经网络，接着使用Pytorch的自动微分功能对该网络的输入变量$(x,t)$求微分从而将方程的微分约束形式使用神经网络表示出来。
 PINN的损失函数定义如下：
 \begin{equation}
 LOSS = LOSS_{u} + LOSS_{f}
@@ -95,35 +61,73 @@ LOSS_{f} = \frac{1}{N_f}\sum_{i=1}^{N_f}|f(t_{f}^{i},x_{f}^{i})|^{2}
 \subsection{实验结果}
 我们分别用传统方法和神经网络做了实验来进行对比。
 \subsubsection{有限元方法}
-传统方法使用有限元法来及求解偏微分方程的数值解，我们使用Fenics来实现，Fenics是一个开源的求解偏微分方程的计算平台，可以快速有效的将物理模型转化为有限元代码。在空间上我们划分了255个区域，时间上划分了100个区域。图1展示了使用有限元求解的结果。
+传统方法使用有限元法来及求解偏微分方程的数值解，我们使用Fenics来实现，Fenics是一个开源的求解偏微分方程的计算平台，可以快速有效的将物理模型转化为有限元代码。在空间上我们划分了255个区域，时间上划分了100个时刻。图1展示了使用有限元求解的结果。
+
 \begin{figure}
 \centering
-\caption{使用Fenics求解}
+\caption{Fenics求解与神经网络求解接结果}
 \includegraphics[scale=1]{Burgers Equation(Fenics).pdf}
+\includegraphics[scale=1]{Burgers Equation(NN).pdf}
 \end{figure}
 
-
 \section{神经网络}
-\begin{figure}
+我们设计了一个全连接神经网络去逼近方程的解，该神经网络包括9个全连接层，每层包含20个神经元，使用tanh激活函数。为了训练该网络，对于数据驱动部分$LOSS_u$我们在初始状态和边界状态选取了200个训练数据， 对于物理约束部分$LOSS_{f}$, 我们在整个$\Omega \times T$区间采样了8000个训练数据$\lbrace x, t\rbrace$。图2 表示在初始状态和边界状态训练数据的分布， 图1 下面的图表示神经网络的预测结果， 可以看出与真实的结果对比，神经网络的预测结果整体上非常准确。图3 还比较了神经网络在局部的预测结果， 分别选取了$t= 0.25, 0.5, 0.75$三个时刻，实验表明神经网络在局部的拟合效果仍旧准确。 
+
+为深入分析神经网络的性能，我们做了进一步实验，分别采用不同的训练数据和网络架构来验证神经网络的预测准确性。表1 展示了用初始状态和边界状态以及整个区间采样的不同数量的训练数据去训练神经网络的结果，此时网络包含8个中间层，每层20个神经元。实验结果表明随着整体训练数据的增加神经网络的预测准确率也随之升高。表2 展示了不同的网络结构的预测相对误差，即设计神经网络不同的隐层和每层不同的神经元数目，此时所使用的训练数据固定为初始和边界状态$N_u = 100$，整个区间上的采样$N_f = 10000$。从表格我们可以看出随着网络层数和每层神经元数目的增加，神经网络的预测性能也越来越好。
+
+\begin{figure}[]
 \centering
 \caption{训练数据分布}
 \includegraphics[scale=0.6]{result1.pdf}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[]
 \centering
-\caption{结果对比}
+\caption{具体时刻和位置结果对比}
 \includegraphics[scale=0.4]{compare.png}
 \end{figure}
 
+\begin{table}[h]
+\caption{神经网络预测值与准确值的相对误差}
+\centering
+\begin{tabular}{c|ccccc}
+\hline
+\diagbox{$N_u$} {$N_f$} & 2000 & 4000 & 6000 & 8000 & 10000 \\
+\hline
+20 & 1.33e-01 & 5.82e-01 & 2.76e-01 & 8.78e-02 & 1.94e-01 \\
+\hline
+40 & 2.29e-02 & 3.62e-01 & 1.00e-02 & 1.74e-02 & 7.66e-02\\
+\hline
+60 &  2.30e-01 & 4.32e-02 & 2.23e-02&1.87e-02 &9.78e-03 \\
+\hline
+80 & 3.95e-01 & 8.44e-03& 3.39e-02 & 9.05e-03 & 1.74e-02\\
+\hline
+100 & 7.8e-02 & 5.21e-02 & 5.73e-03 & 1.81e-03 & 5.03e-03\\
+\hline
+200 & 2.7e-01 & 3.85e-03 & 9.77e-04 & 1.13e-03 & 2.59e-03\\
+\hline
+\end{tabular}
+\end{table}
 
-
-
-
+\begin{table}
+\centering
+\caption{神经网络预测值与准确值的相对误差}
+\begin{tabular}{c|ccc}
+\hline
+\diagbox{Layers} {Neurons} & 10& 20 & 40  \\
+\hline
+2 & 4.53e-01 & 3.26e-01 & 5.43e-02\\
+4 & 3.55e-02 & 1.79e-01 & 1.51e-02\\
+6 & 1.06e-02 & 2.63e-02 & 4.81e-02\\
+8 & 6.96e-02 & 9.44e-03 & 1.07e-02\\
+\hline
+\end{tabular}
+\end{table}
 \section{研究方法}
+本课题拟采用传统的有限元解法和基于PINN的神经网络对偏微分方程求解。有限元主要使用开源的软件包Fenics实现，神经网络主要使用开源的深度学习框架Pytorch实现。通过与传统方法实验结果对比来验证神经网络的求解准确性，并通过传统方法获得的结果为神经网络提供训练数据。
 
 \section{研究计划}
-
+我们使用神经网络首先求解了不带随机参数的确定性偏微分方程，结果表明基于PINN神经网络对偏微分方程解的逼近效果很好并且具有传统数值方法和纯数据驱动模型所没有的优点。通过实验我们验证了该方法的可行性，下一步将考虑求解带随机输入的偏微分方程。
 
 
 \bibliographystyle{abbrv}

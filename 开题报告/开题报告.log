@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.14159265-2.6-0.999991 (TeX Live 2019/Debian) (preloaded format=xelatex 2022.1.5)  5 JAN 2022 22:05
+This is XeTeX, Version 3.14159265-2.6-0.999991 (TeX Live 2019/Debian) (preloaded format=xelatex 2022.1.5)  10 JAN 2022 16:15
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -587,28 +587,40 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <5> on input line 23.
 [1
 
-] (/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
-File: lstlang1.sty 2019/09/10 1.8c listings language file
-) [2]
+]
 File: Burgers Equation(Fenics).pdf Graphic file (type pdf)
 <use Burgers Equation(Fenics).pdf>
+File: Burgers Equation(NN).pdf Graphic file (type pdf)
+<use Burgers Equation(NN).pdf>
+ [2] [3]
+
+LaTeX Warning: No positions in optional float specifier.
+               Default added (so using `tbp') on input line 78.
+
 File: result1.pdf Graphic file (type pdf)
 <use result1.pdf>
+
+LaTeX Warning: No positions in optional float specifier.
+               Default added (so using `tbp') on input line 84.
+
 File: compare.png Graphic file (type bmp)
 <compare.png>
 
-Overfull \hbox (49.48569pt too wide) in paragraph at lines 116--117
+Overfull \hbox (49.48569pt too wide) in paragraph at lines 87--88
  [][] 
  []
 
-(./开题报告.bbl [3] [4]) [5] (./开题报告.aux) ) 
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[4] (./开题报告.bbl) [5] (./开题报告.aux) ) 
 Here is how much of TeX's memory you used:
- 10056 strings out of 479819
- 245192 string characters out of 5895847
- 751073 words of memory out of 5000000
- 26997 multiletter control sequences out of 15000+600000
+ 9879 strings out of 479819
+ 243382 string characters out of 5895847
+ 557313 words of memory out of 5000000
+ 26823 multiletter control sequences out of 15000+600000
  536304 words of font info for 63 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 56i,7n,72p,916b,1546s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 56i,15n,72p,916b,294s stack positions out of 5000i,500n,10000p,200000b,80000s
 
 Output written on 开题报告.pdf (5 pages).
